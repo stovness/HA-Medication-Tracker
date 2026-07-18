@@ -91,6 +91,8 @@
   </button>
 </div>
 
+<div id="debug-output" style="background:#fff3cd;border:1px solid #ffc107;padding:8px;margin-bottom:12px;border-radius:6px;font-size:0.8em;font-family:monospace;display:none;"></div>
+
 <div id="app">
   <div class="empty" id="empty-state">
     <div class="icon">💊</div>
@@ -165,6 +167,16 @@ async function loadMedications() {
       throw new Error(msg);
     }
     const states = await resp.json();
+
+    // DEBUG: Show raw medication sensor data
+    const debugDiv = document.getElementById('debug-output');
+    if (debugDiv) {
+      debugDiv.style.display = 'block';
+      const stockSensors = states.filter(s => s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock'));
+      debugDiv.innerHTML = '<b>DEBUG:</b> Found ' + stockSensors.length + ' stock sensors. ' +
+        stockSensors.map(s => s.entity_id + '=' + s.state).join(', ') +
+        ' | Total states: ' + states.length;
+    }
 
     // Find medication stock sensors
     const stockEntities = states.filter(s =>
