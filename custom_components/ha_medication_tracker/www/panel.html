@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medication Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Roboto, Noto, sans-serif;
+    background: var(--primary-background-color, #fafafa);
+    color: var(--primary-text-color, #212121);
+    padding: 24px 16px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+  }
+  .title { font-size: 1.6em; font-weight: 600; }
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 20px;
+    font-size: 0.95em; cursor: pointer; font-weight: 500;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #03a9f4; color: white; }
+  .btn-take { background: #43a047; color: white; }
+  .btn-undo { background: #ff9800; color: white; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .med-card {
+    background: var(--card-background-color, white);
+    border-radius: 12px; padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .med-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .med-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 24px; flex-shrink: 0;
+  }
+  .med-info { flex: 1; }
+  .med-name { font-size: 1.15em; font-weight: 600; }
+  .med-schedule { font-size: 0.8em; color: var(--secondary-text-color, #666); margin-top: 2px; }
+
+  .stock-bar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stock-item {
+    flex: 1; min-width: 80px; text-align: center;
+    background: var(--primary-background-color, #f5f5f5);
+    border-radius: 8px; padding: 12px;
+  }
+  .stock-value { font-size: 1.4em; font-weight: 700; }
+  .stock-label { font-size: 0.75em; color: var(--secondary-text-color, #999); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stock-ok .stock-value { color: #43a047; }
+  .stock-warn .stock-value { color: #ff9800; }
+  .stock-low .stock-value { color: #e53935; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .last-taken { font-size: 0.8em; color: var(--secondary-text-color, #999); margin-top: 10px; }
+
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--secondary-text-color, #999);
+  }
+  .empty .icon { font-size: 64px; margin-bottom: 16px; }
+  .empty h3 { font-size: 1.2em; margin-bottom: 8px; }
+  .empty p { margin-bottom: 20px; }
+
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading { display: none; }
+
+  @media (prefers-color-scheme: dark) {
+    .stock-item { background: rgba(255,255,255,0.05); }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="title">Medication Tracker</div>
+  <a href="/config/integrations/integration/ha_medication_tracker" class="btn btn-primary" target="_top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Add Medication
+  </a>
+</div>
+
+<div id="app">
+  <div class="empty" id="empty-state">
+    <div class="icon">💊</div>
+    <h3>No Medications Yet</h3>
+    <p>Add your first medication to start tracking doses, schedules, and stock levels.</p>
+    <a href="/config/integrations/integration/ha_medication_tracker" class="btn btn-primary" target="_top">
+      Add Medication
+    </a>
+  </div>
+</div>
+
+<div class="loading" id="loading-indicator">Loading medications...</div>
+
+<script>
+const APP = document.getElementById('app');
+const EMPTY = document.getElementById('empty-state');
+
+async function loadMedications() {
+  try {
+    const resp = await fetch('/api/states');
+    if (!resp.ok) throw new Error('API unavailable');
+    const states = await resp.json();
+
+    // Find medication stock sensors
+    const stockEntities = states.filter(s =>
+      s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock')
+    );
+
+    if (stockEntities.length === 0) {
+      EMPTY.style.display = '';
+      return;
+    }
+
+    EMPTY.style.display = 'none';
+
+    // Remove old cards (keep empty state)
+    APP.querySelectorAll('.med-card').forEach(el => el.remove());
+
+    for (const stock of stockEntities) {
+      const baseId = stock.entity_id.replace('sensor.', '').replace('_stock', '');
+      const name = (stock.attributes.friendly_name || baseId).replace(' Stock', '');
+      const unit = stock.attributes.unit_of_measurement || '';
+      const isLow = stock.attributes.low_stock || false;
+      const lastTaken = stock.attributes.last_taken;
+      const color = stock.attributes.color || '#009688';
+      const stockVal = parseFloat(stock.state) || 0;
+
+      // Find related entities
+      const daysRemaining = states.find(s => s.entity_id === `sensor.${baseId}_days_remaining`);
+      const nextDose = states.find(s => s.entity_id === `sensor.${baseId}_next_dose`);
+      const schedule = (nextDose && nextDose.attributes.schedule) || '';
+      const takenToday = (nextDose && nextDose.attributes.taken_today) || 0;
+
+      const takeBtn = states.find(s => s.entity_id === `button.${baseId}_take`);
+      const undoBtn = states.find(s => s.entity_id === `button.${baseId}_undo`);
+      const canTake = takeBtn && takeBtn.state !== 'unavailable';
+      const canUndo = undoBtn && undoBtn.state !== 'unavailable';
+
+      // Stock class
+      let stockClass = 'stock-ok';
+      if (isLow) stockClass = 'stock-low';
+      else if (daysRemaining && parseFloat(daysRemaining.state) < 14) stockClass = 'stock-warn';
+
+      let lastTakenHtml = '';
+      if (lastTaken) {
+        try {
+          const lt = new Date(lastTaken);
+          lastTakenHtml = `<div class="last-taken">Last taken: ${lt.toLocaleString()}</div>`;
+        } catch(e) {}
+      }
+
+      const card = document.createElement('div');
+      card.className = 'med-card';
+      card.innerHTML = `
+        <div class="med-header">
+          <div class="med-icon" style="background: ${color};">💊</div>
+          <div class="med-info">
+            <div class="med-name">${escapeHtml(name)}</div>
+            ${schedule ? `<div class="med-schedule">${escapeHtml(schedule)}</div>` : ''}
+          </div>
+        </div>
+        <div class="stock-bar">
+          <div class="stock-item ${stockClass}">
+            <div class="stock-value">${stockVal}</div>
+            <div class="stock-label">${escapeHtml(unit) || 'Stock'}</div>
+          </div>
+          ${daysRemaining ? `
+          <div class="stock-item">
+            <div class="stock-value">~${daysRemaining.state}</div>
+            <div class="stock-label">Days Left</div>
+          </div>` : ''}
+          <div class="stock-item">
+            <div class="stock-value">${takenToday}</div>
+            <div class="stock-label">Taken Today</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-take" data-action="take" data-id="${baseId}" ${canTake ? '' : 'disabled'}>Mark Taken</button>
+          <button class="btn btn-undo" data-action="undo" data-id="${baseId}" ${canUndo ? '' : 'disabled'}>Undo</button>
+        </div>
+        ${lastTakenHtml}
+      `;
+      APP.appendChild(card);
+    }
+  } catch (err) {
+    console.error('Failed to load medications:', err);
+    EMPTY.style.display = '';
+    EMPTY.querySelector('h3').textContent = 'Could not connect to Home Assistant';
+    EMPTY.querySelector('p').textContent = 'Make sure HA is running and you are logged in.';
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Handle take/undo clicks via delegation
+APP.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+  const medId = btn.dataset.id;
+  const service = action === 'take' ? 'mark_taken' : 'undo_taken';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    await fetch(`/api/services/ha_medication_tracker/${service}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medication_id: medId })
+    });
+    // Reload after short delay to let HA process
+    setTimeout(loadMedications, 500);
+  } catch (err) {
+    console.error('Service call failed:', err);
+    btn.disabled = false;
+    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
+  }
+});
+
+// Load on page load and refresh every 10 seconds
+loadMedications();
+setInterval(loadMedications, 10000);
+</script>
+</body>
+</html>

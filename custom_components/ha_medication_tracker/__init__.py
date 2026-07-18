@@ -48,7 +48,7 @@ async def _deploy_frontend(hass: HomeAssistant) -> None:
     dest_dir = Path(hass.config.path("www")) / WWW_DEST_DIR
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    for src_file in WWW_SOURCE.glob("*.js"):
+    for src_file in WWW_SOURCE.glob("*.*"):
         dest_file = dest_dir / src_file.name
         if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
             shutil.copy2(src_file, dest_file)
@@ -67,30 +67,15 @@ async def _register_panel(hass: HomeAssistant) -> None:
     if _PANEL_REGISTERED:
         return
 
-    # Cache-bust with manifest version so browsers reload on updates
-    import json
-    manifest_path = Path(__file__).parent / "manifest.json"
-    version = "1.0.0"
-    try:
-        with open(manifest_path) as f:
-            version = json.load(f).get("version", "1.0.0")
-    except Exception:
-        pass
-
-    panel_url = f"/local/{WWW_DEST_DIR}/panel.js?v={version}"
+    panel_url = f"/local/{WWW_DEST_DIR}/panel.html?v=1.0.0"
 
     async_register_built_in_panel(
         hass,
-        component_name="custom",
+        component_name="iframe",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         frontend_url_path=PANEL_URL.strip("/"),
-        config={
-            "_panel_custom": {
-                "name": "medication-tracker-panel",
-                "module_url": panel_url,
-            }
-        },
+        config={"url": panel_url},
         require_admin=False,
     )
 
