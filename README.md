@@ -53,9 +53,18 @@ cp -r HA-Medication-Tracker/custom_components/ha_medication_tracker custom_compo
 
 Then restart Home Assistant.
 
-### Lovelace Card
+### Sidebar Panel
 
-The card file is auto-deployed to `/config/www/` when you add your first medication. Just register the resource:
+After adding your first medication, a **Medication Tracker** entry appears in the sidebar (near History, HACS, etc.). This opens a full management dashboard where you can:
+
+- View all medications with stock levels and schedules
+- Mark doses as taken or undo
+- See days remaining and low-stock warnings
+- Add new medications
+
+### Lovelace Card (Optional)
+
+If you also want a dashboard card:
 
 1. Go to **Settings > Dashboards > three dots > Resources**
 2. Click **Add Resource**

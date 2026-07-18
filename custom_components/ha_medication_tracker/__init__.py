@@ -24,39 +24,72 @@ from .store import MedicationStore
 _LOGGER = logging.getLogger(__name__)
 
 WWW_SOURCE = Path(__file__).parent / "www"
-CARD_FILE = "medication-tracker-card.js"
-_WWW_DEPLOYED = False
+WWW_DEST_DIR = "community/ha_medication_tracker"
+PANEL_URL = "/ha-medication-tracker"
+PANEL_TITLE = "Medication Tracker"
+PANEL_ICON = "mdi:pill"
+_FRONTEND_DEPLOYED = False
+_PANEL_REGISTERED = False
 
 
-async def _deploy_lovelace_card(hass: HomeAssistant) -> None:
-    """Copy the Lovelace card JS to /config/www/ so it's served at /local/.
+async def _deploy_frontend(hass: HomeAssistant) -> None:
+    """Copy all frontend assets to /config/www/ so they're served at /local/.
 
-    Idempotent - only runs once per HA start.
+    Idempotent - only runs once per HA start. Copies card.js and panel.js.
     """
-    global _WWW_DEPLOYED
-    if _WWW_DEPLOYED:
+    global _FRONTEND_DEPLOYED
+    if _FRONTEND_DEPLOYED:
         return
 
-    src = WWW_SOURCE / CARD_FILE
-    if not src.is_file():
-        _LOGGER.warning("Lovelace card source not found: %s", src)
+    if not WWW_SOURCE.is_dir():
         return
 
-    www_dir = Path(hass.config.path("www")) / "community" / "ha_medication_tracker"
-    www_dir.mkdir(parents=True, exist_ok=True)
-    dest = www_dir / CARD_FILE
+    dest_dir = Path(hass.config.path("www")) / WWW_DEST_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
 
-    if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
-        shutil.copy2(src, dest)
-        dest.chmod(0o644)
-        _LOGGER.info("Deployed Lovelace card to %s", dest)
+    for src_file in WWW_SOURCE.glob("*.js"):
+        dest_file = dest_dir / src_file.name
+        if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
+            shutil.copy2(src_file, dest_file)
+            dest_file.chmod(0o644)
+            _LOGGER.info("Deployed %s to %s", src_file.name, dest_file)
 
-    _WWW_DEPLOYED = True
+    _FRONTEND_DEPLOYED = True
+
+
+async def _register_panel(hass: HomeAssistant) -> None:
+    """Register the management panel in the sidebar.
+
+    Idempotent - panel is only registered once.
+    """
+    global _PANEL_REGISTERED
+    if _PANEL_REGISTERED:
+        return
+
+    panel_url = f"/local/{WWW_DEST_DIR}/panel.js"
+
+    hass.components.frontend.async_register_built_in_panel(
+        component_name="custom",
+        sidebar_title=PANEL_TITLE,
+        sidebar_icon=PANEL_ICON,
+        frontend_url_path=PANEL_URL.strip("/"),
+        config={
+            "_panel_custom": {
+                "name": "medication-tracker-panel",
+                "module_url": panel_url,
+            }
+        },
+        require_admin=False,
+    )
+
+    _LOGGER.info("Registered Medication Tracker sidebar panel")
+    _PANEL_REGISTERED = True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Medication Tracker from a config entry."""
-    await _deploy_lovelace_card(hass)
+    await _deploy_frontend(hass)
+    await _register_panel(hass)
 
     store = MedicationStore(hass)
 
