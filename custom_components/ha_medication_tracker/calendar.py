@@ -22,9 +22,10 @@ async def async_setup_entry(
     """Set up medication calendar entities."""
     store = hass.data[DOMAIN]
     data = config_entry.data
-
     med_id = data["medication_id"]
-    async_add_entities([MedicationCalendarEntity(store, config_entry, med_id)])
+    entity = MedicationCalendarEntity(store, config_entry, med_id)
+    entity.update()
+    async_add_entities([entity])
 
 
 class MedicationCalendarEntity(CalendarEntity):
@@ -35,38 +36,37 @@ class MedicationCalendarEntity(CalendarEntity):
 
     def __init__(self, store, config_entry, med_id: str) -> None:
         """Initialize the calendar."""
+        super().__init__()
         self._store = store
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_calendar"
-        self._attr_device_info = None
 
     @property
     def name(self) -> str:
         """Calendar name."""
-        data = self._config_entry.data
-        return data.get("name", "Medication")
+        return self._config_entry.data.get("name", "Medication")
 
     @property
     def icon(self) -> str:
         """Icon from config."""
         return self._config_entry.data.get("icon", "mdi:pill")
 
-    @property
-    def event(self) -> CalendarEvent | None:
-        """Return the current or next upcoming event."""
+    def update(self) -> None:
+        """Update the calendar event."""
         data = self._config_entry.data
         schedule = data.get("schedule", {})
         next_dose = get_next_dose_time(schedule)
 
         if next_dose is None:
-            return None
+            self._attr_event = None
+            return
 
         dosage = data.get("dosage", "")
         dosage_unit = data.get("dosage_unit", "")
         desc = f"{dosage} {dosage_unit}".strip()
 
-        return CalendarEvent(
+        self._attr_event = CalendarEvent(
             start=next_dose,
             end=next_dose + timedelta(minutes=15),
             summary=f"Take {data['name']}",
