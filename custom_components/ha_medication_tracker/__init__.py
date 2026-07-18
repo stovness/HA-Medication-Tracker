@@ -70,6 +70,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
     panel_url = f"/local/{WWW_DEST_DIR}/panel.js"
 
     async_register_built_in_panel(
+        hass,
         component_name="custom",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
