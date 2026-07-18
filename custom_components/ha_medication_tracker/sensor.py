@@ -90,6 +90,7 @@ class MedicationStockSensor(SensorEntity):
         attrs: dict[str, Any] = {
             ATTR_LAST_TAKEN: last_taken.isoformat() if last_taken else None,
             ATTR_LOW_STOCK: self._is_low_stock(),
+            "medication_id": self._med_id,
         }
 
         return attrs

@@ -195,6 +195,7 @@ async function loadMedications() {
 
     for (const stock of stockEntities) {
       const baseId = stock.entity_id.replace('sensor.', '').replace('_stock', '');
+      const medId = stock.attributes.medication_id || baseId;
       const name = (stock.attributes.friendly_name || baseId).replace(' Stock', '');
       const unit = stock.attributes.unit_of_measurement || '';
       const isLow = stock.attributes.low_stock || false;
@@ -252,8 +253,8 @@ async function loadMedications() {
           </div>
         </div>
         <div class="actions">
-          <button class="btn btn-take" data-action="take" data-id="${baseId}" ${canTake ? '' : 'disabled'}>Mark Taken</button>
-          <button class="btn btn-undo" data-action="undo" data-id="${baseId}" ${canUndo ? '' : 'disabled'}>Undo</button>
+          <button class="btn btn-take" data-action="take" data-id="${medId}" ${canTake ? '' : 'disabled'}>Mark Taken</button>
+          <button class="btn btn-undo" data-action="undo" data-id="${medId}" ${canUndo ? '' : 'disabled'}>Undo</button>
         </div>
         ${lastTakenHtml}
       `;
