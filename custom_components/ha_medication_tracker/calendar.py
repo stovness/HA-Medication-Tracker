@@ -57,6 +57,11 @@ class MedicationCalendarEntity(CalendarEntity):
         """Icon from config."""
         return self._config_entry.data.get("icon", "mdi:pill")
 
+    @property
+    def event(self) -> CalendarEvent | None:
+        """Return the current or next upcoming event."""
+        return self._attr_event
+
     def update(self) -> None:
         """Update the calendar event."""
         data = self._config_entry.data
