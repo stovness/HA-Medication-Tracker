@@ -55,14 +55,14 @@ Then restart Home Assistant.
 
 ### Lovelace Card (Optional)
 
-Add the card as a module resource in Home Assistant:
+The card is served automatically by the integration. No manual file copying needed.
 
 1. Go to **Settings > Dashboards > three dots > Resources**
 2. Click **Add Resource**
-3. URL: `/local/community/ha-medication-tracker-card.js` (or use the full path from `custom_components/ha_medication_tracker/www/`)
+3. URL: `/local/ha_medication_tracker/medication-tracker-card.js`
 4. Resource type: **JavaScript Module**
 
-> If using HACS, the card file will be at `/hacsfiles/ha-medication-tracker-card/medication-tracker-card.js` after the next HACS update. For now, copy it manually.
+> The integration registers this path automatically on startup. If the resource 404s, restart Home Assistant once after installing the integration.
 
 ## Configuration
 
