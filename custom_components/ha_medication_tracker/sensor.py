@@ -75,7 +75,11 @@ class MedicationStockSensor(SensorEntity):
 
     @property
     def native_value(self) -> int:
-        return self._store.get_stock(self._med_id)
+        result = self._store.get_stock(self._med_id)
+        import logging
+        _LOGGER = logging.getLogger(__name__)
+        _LOGGER.warning("STOCK_DEBUG: med_id=%s result=%s", self._med_id, result)
+        return result
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

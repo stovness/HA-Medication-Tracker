@@ -99,11 +99,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _deploy_frontend(hass)
     await _register_panel(hass)
 
-    store = MedicationStore(hass)
-
     if DOMAIN not in hass.data:
-        hass.data[DOMAIN] = store
+        store = MedicationStore(hass)
         await store.async_load()
+        hass.data[DOMAIN] = store
+
+    store = hass.data[DOMAIN]
 
     data = dict(entry.data)
     med_id = data["medication_id"]
