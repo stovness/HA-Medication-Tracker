@@ -6,6 +6,7 @@ import logging
 import shutil
 from pathlib import Path
 
+from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -68,7 +69,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
 
     panel_url = f"/local/{WWW_DEST_DIR}/panel.js"
 
-    hass.components.frontend.async_register_built_in_panel(
+    async_register_built_in_panel(
         component_name="custom",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
