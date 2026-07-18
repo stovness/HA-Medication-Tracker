@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTR_DAYS_REMAINING,
@@ -201,7 +202,7 @@ class MedicationNextDoseSensor(SensorEntity):
     @property
     def native_value(self) -> str | None:
         schedule = self._config_entry.data.get("schedule", {})
-        next_dose = get_next_dose_time(schedule)
+        next_dose = get_next_dose_time(schedule, dt_util.now())
         return next_dose.isoformat() if next_dose else None
 
     @property

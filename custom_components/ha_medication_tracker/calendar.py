@@ -9,9 +9,17 @@ from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .schedule import get_next_dose_time, get_todays_doses, get_schedule_summary
+
+
+def _ensure_tz(dt_value: datetime) -> datetime:
+    """Ensure a datetime is timezone-aware using HA's timezone."""
+    if dt_value.tzinfo is None:
+        return dt_value.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    return dt_value
 
 
 async def async_setup_entry(
@@ -20,10 +28,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up medication calendar entities."""
-    store = hass.data[DOMAIN]
-    data = config_entry.data
-    med_id = data["medication_id"]
-    entity = MedicationCalendarEntity(store, config_entry, med_id)
+    med_id = config_entry.data["medication_id"]
+    entity = MedicationCalendarEntity(config_entry, med_id)
     entity.update()
     async_add_entities([entity])
 
@@ -32,15 +38,14 @@ class MedicationCalendarEntity(CalendarEntity):
     """Calendar entity showing medication schedule."""
 
     _attr_has_entity_name = True
-    _attr_translation_key = "medication_calendar"
 
-    def __init__(self, store, config_entry, med_id: str) -> None:
+    def __init__(self, config_entry, med_id: str) -> None:
         """Initialize the calendar."""
         super().__init__()
-        self._store = store
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_calendar"
+        self._attr_event = None
 
     @property
     def name(self) -> str:
@@ -56,12 +61,14 @@ class MedicationCalendarEntity(CalendarEntity):
         """Update the calendar event."""
         data = self._config_entry.data
         schedule = data.get("schedule", {})
-        next_dose = get_next_dose_time(schedule)
+        now = dt_util.now()
+        next_dose = get_next_dose_time(schedule, now)
 
         if next_dose is None:
             self._attr_event = None
             return
 
+        next_dose = _ensure_tz(next_dose)
         dosage = data.get("dosage", "")
         dosage_unit = data.get("dosage_unit", "")
         desc = f"{dosage} {dosage_unit}".strip()
@@ -90,6 +97,7 @@ class MedicationCalendarEntity(CalendarEntity):
             day_times = get_todays_doses(schedule, current)
             for t in day_times:
                 event_dt = datetime.combine(current.date(), t)
+                event_dt = _ensure_tz(event_dt)
                 if start_date <= event_dt <= end_date:
                     events.append(
                         CalendarEvent(
