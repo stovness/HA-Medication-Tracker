@@ -365,18 +365,9 @@ class MedicationTrackerPanel extends HTMLElement {
   }
 
   _startConfigFlow() {
-    // Navigate to the integration config flow start
-    if (this._hass && this._hass.auth) {
-      // Try to open the config flow via HA navigation
-      const event = new CustomEvent("hass-more-info", {
-        bubbles: true,
-        composed: true,
-        detail: { entityId: null },
-      });
-      // Navigate to the integrations page to add
-      history.pushState(null, "", "/config/integrations/dashboard");
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }
+    // Navigate to the HA-Medication-Tracker config flow wizard
+    // This opens the "Add Medication" setup directly
+    window.location.href = "/config/integrations/integration/ha_medication_tracker";
   }
 }
 
