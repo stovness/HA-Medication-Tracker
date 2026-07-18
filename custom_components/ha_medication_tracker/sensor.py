@@ -57,16 +57,20 @@ class MedicationStockSensor(SensorEntity):
     """Sensor showing current stock level."""
 
     _attr_has_entity_name = True
-    _attr_native_unit_of_measurement = "units"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, store, config_entry, med_id: str) -> None:
         self._store = store
         self._config_entry = config_entry
         self._med_id = med_id
-        unit = config_entry.data.get("dosage_unit", "tablet(s)")
         self._attr_unique_id = f"{med_id}_stock"
-        self._attr_native_unit_of_measurement = unit
+        # Only set unit for standard units, otherwise leave as
+        # pure count to avoid HA dropping the value
+        unit = config_entry.data.get("dosage_unit", "tablet(s)")
+        if unit in ("tablet(s)", "capsule(s)", "sachet(s)", "drop(s)", "puff(s)", "injection", "other"):
+            self._attr_native_unit_of_measurement = None
+        else:
+            self._attr_native_unit_of_measurement = unit
         self._attr_icon = "mdi:counter"
 
     @property
@@ -75,11 +79,7 @@ class MedicationStockSensor(SensorEntity):
 
     @property
     def native_value(self) -> int:
-        result = self._store.get_stock(self._med_id)
-        import logging
-        _LOGGER = logging.getLogger(__name__)
-        _LOGGER.warning("STOCK_DEBUG: med_id=%s result=%s", self._med_id, result)
-        return result
+        return self._store.get_stock(self._med_id)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
