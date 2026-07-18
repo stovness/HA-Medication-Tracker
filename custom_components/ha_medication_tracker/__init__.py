@@ -67,7 +67,17 @@ async def _register_panel(hass: HomeAssistant) -> None:
     if _PANEL_REGISTERED:
         return
 
-    panel_url = f"/local/{WWW_DEST_DIR}/panel.js"
+    # Cache-bust with manifest version so browsers reload on updates
+    import json
+    manifest_path = Path(__file__).parent / "manifest.json"
+    version = "1.0.0"
+    try:
+        with open(manifest_path) as f:
+            version = json.load(f).get("version", "1.0.0")
+    except Exception:
+        pass
+
+    panel_url = f"/local/{WWW_DEST_DIR}/panel.js?v={version}"
 
     async_register_built_in_panel(
         hass,
