@@ -86,6 +86,17 @@ async def _register_panel(hass: HomeAssistant) -> None:
     _PANEL_REGISTERED = True
 
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Deploy frontend assets and register panel on integration discovery.
+
+    This runs before any config entries exist, so the sidebar panel
+    appears as soon as the integration is installed.
+    """
+    await _deploy_frontend(hass)
+    await _register_panel(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Medication Tracker from a config entry."""
     await _deploy_frontend(hass)
