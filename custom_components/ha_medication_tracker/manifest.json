@@ -1,0 +1,13 @@
+{
+  "domain": "ha_medication_tracker",
+  "name": "HA Medication Tracker",
+  "codeowners": ["@stovness"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/stovness/HA-Medication-Tracker",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/stovness/HA-Medication-Tracker/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

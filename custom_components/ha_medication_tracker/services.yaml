@@ -1,0 +1,68 @@
+mark_taken:
+  name: Mark dose as taken
+  description: Record that a medication dose has been taken.
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The unique ID of the medication.
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+undo_taken:
+  name: Undo last taken dose
+  description: Undo the most recently recorded dose for a medication.
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The unique ID of the medication.
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+
+add_stock:
+  name: Add stock
+  description: Add to the current stock level of a medication.
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The unique ID of the medication.
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+    amount:
+      name: Amount
+      description: The amount to add to current stock.
+      required: false
+      default: 1
+      example: 30
+      selector:
+        number:
+          min: 1
+          max: 9999
+          step: 1
+
+set_stock:
+  name: Set stock
+  description: Set the absolute stock level for a medication.
+  fields:
+    medication_id:
+      name: Medication ID
+      description: The unique ID of the medication.
+      required: true
+      example: "abc123def456"
+      selector:
+        text:
+    amount:
+      name: Amount
+      description: The new stock level.
+      required: true
+      example: 30
+      selector:
+        number:
+          min: 0
+          max: 9999
+          step: 1

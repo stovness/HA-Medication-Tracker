@@ -1,0 +1,92 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Medication",
+        "description": "Enter the medication details.",
+        "data": {
+          "name": "Medication Name",
+          "dosage": "Dosage (e.g. 500mg, 1 tablet)",
+          "dosage_unit": "Dosage Unit",
+          "icon": "Icon",
+          "color": "Colour",
+          "notes": "Notes (optional)"
+        }
+      },
+      "schedule_type": {
+        "title": "Schedule Type",
+        "description": "Choose how the medication schedule works.",
+        "data": {
+          "schedule_type": "Schedule Type"
+        }
+      },
+      "schedule_daily": {
+        "title": "Daily Schedule",
+        "description": "Select the times to take this medication each day.",
+        "data": {
+          "times": "Times"
+        }
+      },
+      "schedule_weekly": {
+        "title": "Weekly Schedule",
+        "description": "Set different times for each day of the week. Leave a day empty to skip it.",
+        "data": {
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday",
+          "sunday": "Sunday"
+        }
+      },
+      "supply": {
+        "title": "Supply Tracking",
+        "description": "Configure supply tracking and low-stock alerts.",
+        "data": {
+          "supply_tracking": "Enable Supply Tracking",
+          "initial_stock": "Initial Stock",
+          "stock_per_dose": "Units Per Dose",
+          "low_stock_threshold": "Low Stock Threshold",
+          "low_stock_unit": "Threshold Unit"
+        }
+      }
+    },
+    "error": {
+      "no_days_selected": "You must select at least one day."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit Medication",
+        "description": "Update medication details.",
+        "data": {
+          "dosage": "Dosage",
+          "notes": "Notes"
+        }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "take": {
+        "name": "Take"
+      },
+      "undo": {
+        "name": "Undo"
+      }
+    },
+    "sensor": {
+      "stock": {
+        "name": "Stock"
+      },
+      "days_remaining": {
+        "name": "Days Remaining"
+      },
+      "next_dose": {
+        "name": "Next Dose"
+      }
+    }
+  }
+}
