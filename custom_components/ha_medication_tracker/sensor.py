@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -28,7 +28,7 @@ from .const import (
 )
 from .schedule import get_next_dose_time, get_schedule_summary
 
-SCAN_INTERVAL = 60  # seconds
+SCAN_INTERVAL = timedelta(seconds=60)
 
 
 async def async_setup_entry(
