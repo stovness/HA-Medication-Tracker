@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -23,23 +22,32 @@ from .store import MedicationStore
 
 _LOGGER = logging.getLogger(__name__)
 
+WWW_PATH = str(Path(__file__).parent / "www")
+WWW_URL = "/ha_medication_tracker"
+_STATIC_REGISTERED = False
+
+
+async def _register_static_path(hass: HomeAssistant) -> None:
+    """Register www directory as a static path (idempotent)."""
+    global _STATIC_REGISTERED
+    if _STATIC_REGISTERED:
+        return
+    if Path(WWW_PATH).is_dir():
+        hass.http.register_static_path(WWW_URL, WWW_PATH, cache_headers=True)
+        _STATIC_REGISTERED = True
+        _LOGGER.debug("Registered static path %s -> %s", WWW_URL, WWW_PATH)
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register static paths for Lovelace card."""
-    www_path = Path(__file__).parent / "www"
-    if www_path.is_dir():
-        await hass.http.async_register_static_paths([
-            StaticPathConfig(
-                "/ha_medication_tracker",
-                str(www_path),
-                cache_headers=True,
-            ),
-        ])
+    """Register static path for Lovelace card."""
+    await _register_static_path(hass)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Medication Tracker from a config entry."""
+    await _register_static_path(hass)
+
     store = MedicationStore(hass)
 
     if DOMAIN not in hass.data:
