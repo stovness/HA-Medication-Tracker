@@ -1,4 +1,4 @@
-"""Calendar entities for medication schedules."""
+"""Calendar entities showing taken medication doses as history events."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .schedule import get_next_dose_time, get_todays_doses, get_schedule_summary
 
 
 def _ensure_tz(dt_value: datetime) -> datetime:
@@ -28,20 +27,26 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up medication calendar entities."""
+    store = hass.data[DOMAIN]
     med_id = config_entry.data["medication_id"]
-    entity = MedicationCalendarEntity(config_entry, med_id)
+    entity = MedicationCalendarEntity(store, config_entry, med_id)
     entity.update()
     async_add_entities([entity])
 
 
 class MedicationCalendarEntity(CalendarEntity):
-    """Calendar entity showing medication schedule."""
+    """Calendar entity showing taken medication doses as events.
+
+    Only shows doses that have actually been taken (via Mark Taken).
+    No predicted/scheduled events - just real history.
+    """
 
     _attr_has_entity_name = True
 
-    def __init__(self, config_entry, med_id: str) -> None:
+    def __init__(self, store, config_entry, med_id: str) -> None:
         """Initialize the calendar."""
         super().__init__()
+        self._store = store
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_calendar"
@@ -59,70 +64,71 @@ class MedicationCalendarEntity(CalendarEntity):
 
     @property
     def event(self) -> CalendarEvent | None:
-        """Return the current or next upcoming event."""
+        """Return the most recent taken dose."""
         return self._attr_event
 
     def update(self) -> None:
-        """Update the calendar event."""
+        """Update the calendar with the most recent taken dose."""
         data = self._config_entry.data
-        schedule = data.get("schedule", {})
-        now = dt_util.now()
-        next_dose = get_next_dose_time(schedule, now)
-
-        if next_dose is None:
-            self._attr_event = None
-            return
-
-        next_dose = _ensure_tz(next_dose)
+        name = data["name"]
         dosage = data.get("dosage", "")
         dosage_unit = data.get("dosage_unit", "")
         desc = f"{dosage} {dosage_unit}".strip()
 
+        last_taken = self._store.get_last_taken(self._med_id)
+
+        if last_taken is None:
+            self._attr_event = None
+            return
+
+        last_taken = _ensure_tz(last_taken)
+
         self._attr_event = CalendarEvent(
-            start=next_dose,
-            end=next_dose + timedelta(minutes=15),
-            summary=f"Take {data['name']}",
+            start=last_taken,
+            end=last_taken + timedelta(minutes=5),
+            summary=f"Took {name}",
             description=desc if desc else None,
         )
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
-        """Get events within a date range."""
+        """Return taken dose events within a date range."""
         data = self._config_entry.data
-        schedule = data.get("schedule", {})
+        name = data["name"]
         dosage = data.get("dosage", "")
         dosage_unit = data.get("dosage_unit", "")
         desc = f"{dosage} {dosage_unit}".strip()
-        name = data["name"]
+
+        history = self._store.get_history(self._med_id)
         events = []
 
-        current = start_date
-        while current <= end_date:
-            day_times = get_todays_doses(schedule, current)
-            for t in day_times:
-                event_dt = datetime.combine(current.date(), t)
-                event_dt = _ensure_tz(event_dt)
-                if start_date <= event_dt <= end_date:
-                    events.append(
-                        CalendarEvent(
-                            start=event_dt,
-                            end=event_dt + timedelta(minutes=15),
-                            summary=f"Take {name}",
-                            description=desc if desc else None,
-                        )
+        for entry in history:
+            if entry.get("action") != "taken":
+                continue
+
+            ts = datetime.fromisoformat(entry["timestamp"])
+            ts = _ensure_tz(ts)
+
+            if start_date <= ts <= end_date:
+                events.append(
+                    CalendarEvent(
+                        start=ts,
+                        end=ts + timedelta(minutes=5),
+                        summary=f"Took {name}",
+                        description=desc if desc else None,
                     )
-            current += timedelta(days=1)
+                )
 
         return events
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Extra attributes for the calendar."""
+        """Extra attributes."""
         data = self._config_entry.data
-        schedule = data.get("schedule", {})
         return {
-            "schedule_type": schedule.get("schedule_type", "daily"),
-            "schedule_summary": get_schedule_summary(schedule),
             "medication_id": self._med_id,
+            "dosage": data.get("dosage", ""),
+            "dosage_unit": data.get("dosage_unit", ""),
+            "total_taken": len([e for e in self._store.get_history(self._med_id) if e.get("action") == "taken"]),
         }
