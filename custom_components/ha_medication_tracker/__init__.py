@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
@@ -22,31 +23,40 @@ from .store import MedicationStore
 
 _LOGGER = logging.getLogger(__name__)
 
-WWW_PATH = str(Path(__file__).parent / "www")
-WWW_URL = "/ha_medication_tracker"
-_STATIC_REGISTERED = False
+WWW_SOURCE = Path(__file__).parent / "www"
+CARD_FILE = "medication-tracker-card.js"
+_WWW_DEPLOYED = False
 
 
-async def _register_static_path(hass: HomeAssistant) -> None:
-    """Register www directory as a static path (idempotent)."""
-    global _STATIC_REGISTERED
-    if _STATIC_REGISTERED:
+async def _deploy_lovelace_card(hass: HomeAssistant) -> None:
+    """Copy the Lovelace card JS to /config/www/ so it's served at /local/.
+
+    Idempotent - only runs once per HA start.
+    """
+    global _WWW_DEPLOYED
+    if _WWW_DEPLOYED:
         return
-    if Path(WWW_PATH).is_dir():
-        hass.http.register_static_path(WWW_URL, WWW_PATH, cache_headers=True)
-        _STATIC_REGISTERED = True
-        _LOGGER.debug("Registered static path %s -> %s", WWW_URL, WWW_PATH)
 
+    src = WWW_SOURCE / CARD_FILE
+    if not src.is_file():
+        _LOGGER.warning("Lovelace card source not found: %s", src)
+        return
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register static path for Lovelace card."""
-    await _register_static_path(hass)
-    return True
+    www_dir = Path(hass.config.path("www")) / "community" / "ha_medication_tracker"
+    www_dir.mkdir(parents=True, exist_ok=True)
+    dest = www_dir / CARD_FILE
+
+    if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
+        shutil.copy2(src, dest)
+        dest.chmod(0o644)
+        _LOGGER.info("Deployed Lovelace card to %s", dest)
+
+    _WWW_DEPLOYED = True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Medication Tracker from a config entry."""
-    await _register_static_path(hass)
+    await _deploy_lovelace_card(hass)
 
     store = MedicationStore(hass)
 
