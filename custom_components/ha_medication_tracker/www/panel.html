@@ -149,6 +149,10 @@ async function haFetch(url, options = {}) {
   if (token) {
     headers['Authorization'] = 'Bearer ' + token;
   }
+  // Set JSON content type for requests with a body
+  if (options.body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   let resp = await fetch(url, { ...options, headers, credentials: 'same-origin' });
 
