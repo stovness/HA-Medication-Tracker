@@ -18,6 +18,7 @@ from .const import (
     ATTR_SCHEDULE,
     DOMAIN,
 )
+from .device import build_device_info
 from .schedule import get_next_dose_time, get_schedule_summary
 
 SCAN_INTERVAL = timedelta(seconds=5)
@@ -68,6 +69,7 @@ class MedicationStockSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_stock"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
         unit = config_entry.data.get("dosage_unit", "tablet(s)")
         self._attr_native_unit_of_measurement = unit if unit in _STANDARD_UNITS else None
         self._attr_icon = "mdi:counter"
@@ -125,6 +127,7 @@ class MedicationDaysRemainingSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_days_remaining"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
 
     @property
     def name(self) -> str:
@@ -168,6 +171,7 @@ class MedicationNextDoseSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_next_dose"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
 
     @property
     def name(self) -> str:

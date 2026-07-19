@@ -1,0 +1,105 @@
+# Medication Tracker Dashboard
+#
+# Copy this to a new dashboard: Settings > Dashboards > Add Dashboard
+# Paste into raw config editor (three dots > Raw configuration editor)
+#
+# Replace "REPLACE_WITH_YOUR_MEDICATION_NAME" with the actual name
+# of your medication (e.g. "metformin", "ibuprofen").
+#
+# Each medication has these entities:
+#   sensor.<name>_stock           - current supply count
+#   sensor.<name>_days_remaining  - estimated days of supply
+#   sensor.<name>_next_dose       - next scheduled dose time
+#   button.<name>_take            - mark dose as taken
+#   button.<name>_undo            - undo last taken dose
+#   calendar.<name>               - taken dose history on calendar
+
+title: Medication Tracker
+views:
+  - title: Medications
+    icon: mdi:pill
+    cards:
+      # ---- REPLACE "yourmed" below with your medication entity name ----
+      - type: vertical-stack
+        title: Your Medication
+        cards:
+          # Stock card
+          - type: tile
+            entity: sensor.yourmed_stock
+            name: Stock Remaining
+            icon: mdi:counter
+            color: green
+            show_entity_picture: false
+
+          # Days remaining card
+          - type: tile
+            entity: sensor.yourmed_days_remaining
+            name: Days of Supply
+            icon: mdi:calendar-clock
+
+          # Action buttons
+          - type: horizontal-stack
+            cards:
+              - type: button
+                entity: button.yourmed_take
+                name: Mark Taken
+                icon: mdi:check-circle
+                show_state: false
+                hold_action:
+                  action: none
+
+              - type: button
+                entity: button.yourmed_undo
+                name: Undo
+                icon: mdi:undo
+                show_state: false
+                hold_action:
+                  action: none
+
+              - type: button
+                tap_action:
+                  action: navigate
+                  navigation_path: /ha-medication-tracker
+                name: Manage
+                icon: mdi:cog
+                show_state: false
+                hold_action:
+                  action: none
+
+  - title: Calendar
+    icon: mdi:calendar
+    cards:
+      - type: calendar
+        entities:
+          - calendar.yourmed
+
+  # ---- ALTERNATIVE: Mushroom cards (install Mushroom from HACS first) ----
+  #
+  # - type: custom:mushroom-chips-card
+  #   chips:
+  #     - type: entity
+  #       entity: sensor.yourmed_stock
+  #     - type: entity
+  #       entity: sensor.yourmed_days_remaining
+  #   alignment: center
+  #
+  # - type: custom:mushroom-chips-card
+  #   chips:
+  #     - type: action
+  #       tap_action:
+  #         action: call-service
+  #         service: ha_medication_tracker.mark_taken
+  #         service_data:
+  #           medication_id: "YOUR_MEDICATION_ID_HERE"
+  #       icon: mdi:check-circle
+  #       icon_color: green
+  #       content: Mark Taken
+  #     - type: action
+  #       tap_action:
+  #         action: call-service
+  #         service: ha_medication_tracker.undo_taken
+  #         service_data:
+  #           medication_id: "YOUR_MEDICATION_ID_HERE"
+  #       icon: mdi:undo
+  #       icon_color: orange
+  #       content: Undo

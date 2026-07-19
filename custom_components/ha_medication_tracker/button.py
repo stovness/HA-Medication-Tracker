@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 
 from .const import DOMAIN
+from .device import build_device_info
 
 
 async def async_setup_entry(
@@ -40,6 +41,7 @@ class MedicationTakeButton(ButtonEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_take"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
 
     @property
     def name(self) -> str:
@@ -67,6 +69,7 @@ class MedicationUndoButton(ButtonEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_undo"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
 
     @property
     def name(self) -> str:

@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .device import build_device_info
 
 
 def _ensure_tz(dt_value: datetime) -> datetime:
@@ -50,6 +51,7 @@ class MedicationCalendarEntity(CalendarEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_calendar"
+        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
         self._attr_event = None
 
     @property
