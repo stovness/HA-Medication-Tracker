@@ -162,7 +162,7 @@ async function loadMedications() {
     const states = await resp.json();
 
     const stockEntities = states.filter(s =>
-      s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock')
+      s.entity_id.match(/^sensor\.(.+)_stock(_\d+)?$/)
     );
 
     if (stockEntities.length === 0) {
@@ -174,21 +174,22 @@ async function loadMedications() {
     APP.querySelectorAll('.med-card').forEach(el => el.remove());
 
     for (const stock of stockEntities) {
-      const baseId = stock.entity_id.replace('sensor.', '').replace('_stock', '');
+      const match = stock.entity_id.match(/^sensor\.(.+)_stock(_\d+)?$/);
+      const baseId = match ? match[1] : stock.entity_id.replace('sensor.', '').replace('_stock', '');
       const medId = stock.attributes.medication_id || baseId;
       const name = (stock.attributes.friendly_name || baseId).replace(' Stock', '');
       const unit = stock.attributes.unit_of_measurement || '';
       const stockVal = parseFloat(stock.state) || 0;
       const isLow = stock.attributes.low_stock || false;
       const lastTaken = stock.attributes.last_taken;
-
-      const daysRemaining = states.find(s => s.entity_id === `sensor.${baseId}_days_remaining`);
-      const nextDose = states.find(s => s.entity_id === `sensor.${baseId}_next_dose`);
+      // Find related entities (handle _2, _3 suffixes)
+      const daysRemaining = states.find(s => s.entity_id.startsWith(`sensor.${baseId}_days_remaining`));
+      const nextDose = states.find(s => s.entity_id.startsWith(`sensor.${baseId}_next_dose`));
       const schedule = (nextDose && nextDose.attributes.schedule) || '';
       const takenToday = (nextDose && nextDose.attributes.taken_today) || 0;
 
-      const takeBtn = states.find(s => s.entity_id === `button.${baseId}_take`);
-      const undoBtn = states.find(s => s.entity_id === `button.${baseId}_undo`);
+      const takeBtn = states.find(s => s.entity_id.startsWith(`button.${baseId}_take`));
+      const undoBtn = states.find(s => s.entity_id.startsWith(`button.${baseId}_undo`));
       const canTake = takeBtn && takeBtn.state !== 'unavailable';
       const canUndo = undoBtn && undoBtn.state !== 'unavailable';
 
