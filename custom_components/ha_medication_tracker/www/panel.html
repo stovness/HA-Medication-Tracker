@@ -230,6 +230,14 @@ async function loadMedications() {
           <button class="btn btn-take" onclick="handleMedAction('take','${medId}',this)" ${canTake ? '' : 'disabled'}>Mark Taken</button>
           <button class="btn btn-undo" onclick="handleMedAction('undo','${medId}',this)" ${canUndo ? '' : 'disabled'}>Undo</button>
         </div>
+        <div class="stock-add-row" style="display:flex;gap:4px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.8em;color:var(--secondary-text-color,#999);white-space:nowrap;">Add stock:</span>
+          <button class="btn" style="background:#e0e0e0;color:#333;padding:5px 10px;font-size:0.8em;" onclick="handleStockAdd('${medId}',30,this)">+30</button>
+          <button class="btn" style="background:#e0e0e0;color:#333;padding:5px 10px;font-size:0.8em;" onclick="handleStockAdd('${medId}',60,this)">+60</button>
+          <button class="btn" style="background:#e0e0e0;color:#333;padding:5px 10px;font-size:0.8em;" onclick="handleStockAdd('${medId}',90,this)">+90</button>
+          <input type="number" id="stock-input-${medId}" min="1" max="9999" value="30" style="width:55px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:0.8em;">
+          <button class="btn" style="background:#03a9f4;color:white;padding:5px 10px;font-size:0.8em;" onclick="handleStockAdd('${medId}',parseInt(document.getElementById('stock-input-${medId}').value)||30,this)">+</button>
+        </div>
         ${lastTakenHtml}
       `;
       APP.appendChild(card);
@@ -263,11 +271,7 @@ async function handleMedAction(action, medId, btn) {
     setTimeout(loadMedications, 2000);
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
-  }
-}
-
-/* ---------- Init ---------- */
+    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';\n  }\n}\n\nasync function handleStockAdd(medId, amount, btn) {\n  btn.disabled = true;\n  const origText = btn.textContent;\n  btn.innerHTML = '<span class=\"spinner\"></span>';\n\n  try {\n    const resp = await haFetch('/api/services/ha_medication_tracker/add_stock', {\n      method: 'POST',\n      body: JSON.stringify({ medication_id: medId, amount: amount })\n    });\n    if (!resp.ok) {\n      btn.textContent = 'Fail(' + resp.status + ')';\n      btn.disabled = false;\n      return;\n    }\n    setTimeout(loadMedications, 1500);\n  } catch (err) {\n    btn.disabled = false;\n    btn.textContent = origText;\n  }\n}\n\n/* ---------- Init ---------- */
 
 loadMedications();
 setInterval(loadMedications, 10000);
