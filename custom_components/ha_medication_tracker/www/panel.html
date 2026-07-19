@@ -266,8 +266,8 @@ async function loadMedications() {
           </div>
         </div>
         <div class="actions">
-          <button class="btn btn-take" data-action="take" data-id="${medId}" ${canTake ? '' : 'disabled'}>Mark Taken</button>
-          <button class="btn btn-undo" data-action="undo" data-id="${medId}" ${canUndo ? '' : 'disabled'}>Undo</button>
+          <button class="btn btn-take" onclick="handleMedAction('take','${medId}',this)" ${canTake ? '' : 'disabled'}>Mark Taken</button>
+          <button class="btn btn-undo" onclick="handleMedAction('undo','${medId}',this)" ${canUndo ? '' : 'disabled'}>Undo</button>
         </div>
         ${lastTakenHtml}
       `;
@@ -287,7 +287,39 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Handle take/undo clicks via delegation
+// Global handler for Mark Taken / Undo buttons (inline onclick)
+async function handleMedAction(action, medId, btn) {
+  const service = action === 'take' ? 'mark_taken' : 'undo_taken';
+  const dbg = document.getElementById('debug-output');
+
+  if (dbg) { dbg.style.display = 'block'; dbg.innerHTML = '<b>SENDING:</b> ' + action + ' medId=' + medId; }
+
+  btn.disabled = true;
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const resp = await haFetch(`/api/services/ha_medication_tracker/${service}`, {
+      method: 'POST',
+      body: JSON.stringify({ medication_id: medId })
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      btn.textContent = 'Failed (' + resp.status + ')';
+      btn.disabled = false;
+      if (dbg) { dbg.innerHTML = '<b>FAILED:</b> HTTP ' + resp.status + ' - ' + errText.substring(0,100); }
+      return;
+    }
+    if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
+    setTimeout(loadMedications, 500);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
+    if (dbg) { dbg.innerHTML = '<b>ERROR:</b> ' + err.message; }
+  }
+}
+
+// Handle take/undo clicks via delegation (legacy, kept for safety)
 APP.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
