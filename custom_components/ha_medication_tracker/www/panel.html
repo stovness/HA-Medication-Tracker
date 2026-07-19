@@ -143,18 +143,18 @@ function getToken() {
 }
 
 async function haFetch(url, options = {}) {
-  // Try without auth first (cookies)
-  let resp = await fetch(url, { ...options, credentials: 'same-origin' });
-  if (resp.ok) return resp;
-
-  // If 401, try with token from localStorage
+  // Always include auth token if available (from localStorage)
   const token = getToken();
-  if (token && resp.status === 401) {
-    const headers = {
-      ...(options.headers || {}),
-      'Authorization': 'Bearer ' + token
-    };
-    resp = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+  const headers = { ...(options.headers || {}) };
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+
+  let resp = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+
+  // If that failed and we didn't have a token, try without auth (cookies)
+  if (!resp.ok && !token) {
+    resp = await fetch(url, { ...options, credentials: 'same-origin' });
   }
   return resp;
 }
@@ -287,14 +287,20 @@ APP.addEventListener('click', async (e) => {
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    await haFetch(`/api/services/ha_medication_tracker/${service}`, {
+    const resp = await haFetch(`/api/services/ha_medication_tracker/${service}`, {
       method: 'POST',
       body: JSON.stringify({ medication_id: medId })
     });
+    if (!resp.ok) {
+      console.error('Service call failed:', resp.status, await resp.text());
+      btn.textContent = 'Failed (' + resp.status + ')';
+      btn.disabled = false;
+      return;
+    }
     // Reload after short delay to let HA process
     setTimeout(loadMedications, 500);
   } catch (err) {
-    console.error('Service call failed:', err);
+    console.error('Service call error:', err);
     btn.disabled = false;
     btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
   }
