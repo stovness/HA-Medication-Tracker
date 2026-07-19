@@ -271,7 +271,33 @@ async function handleMedAction(action, medId, btn) {
     setTimeout(loadMedications, 2000);
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';\n  }\n}\n\nasync function handleStockAdd(medId, amount, btn) {\n  btn.disabled = true;\n  const origText = btn.textContent;\n  btn.innerHTML = '<span class=\"spinner\"></span>';\n\n  try {\n    const resp = await haFetch('/api/services/ha_medication_tracker/add_stock', {\n      method: 'POST',\n      body: JSON.stringify({ medication_id: medId, amount: amount })\n    });\n    if (!resp.ok) {\n      btn.textContent = 'Fail(' + resp.status + ')';\n      btn.disabled = false;\n      return;\n    }\n    setTimeout(loadMedications, 1500);\n  } catch (err) {\n    btn.disabled = false;\n    btn.textContent = origText;\n  }\n}\n\n/* ---------- Init ---------- */
+    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
+  }
+}
+
+async function handleStockAdd(medId, amount, btn) {
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const resp = await haFetch('/api/services/ha_medication_tracker/add_stock', {
+      method: 'POST',
+      body: JSON.stringify({ medication_id: medId, amount: amount })
+    });
+    if (!resp.ok) {
+      btn.textContent = 'Fail(' + resp.status + ')';
+      btn.disabled = false;
+      return;
+    }
+    setTimeout(loadMedications, 1500);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
+/* ---------- Init ---------- */
 
 loadMedications();
 setInterval(loadMedications, 10000);
