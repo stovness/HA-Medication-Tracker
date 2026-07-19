@@ -8,7 +8,6 @@ from pathlib import Path
 
 from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 
 from .const import (
@@ -34,9 +33,9 @@ _PANEL_REGISTERED = False
 
 
 async def _deploy_frontend(hass: HomeAssistant) -> None:
-    """Copy all frontend assets to /config/www/ so they're served at /local/.
+    """Copy frontend assets to /config/www/ so they're served at /local/.
 
-    Idempotent - only runs once per HA start. Copies card.js and panel.js.
+    Idempotent - only runs once per HA start.
     """
     global _FRONTEND_DEPLOYED
     if _FRONTEND_DEPLOYED:
@@ -67,15 +66,13 @@ async def _register_panel(hass: HomeAssistant) -> None:
     if _PANEL_REGISTERED:
         return
 
-    panel_url = f"/local/{WWW_DEST_DIR}/panel.html?v=1.0.0"
-
     async_register_built_in_panel(
         hass,
         component_name="iframe",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         frontend_url_path=PANEL_URL.strip("/"),
-        config={"url": panel_url},
+        config={"url": f"/local/{WWW_DEST_DIR}/panel.html?v=1.0.0"},
         require_admin=False,
     )
 
@@ -84,11 +81,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Deploy frontend assets and register panel on integration discovery.
-
-    This runs before any config entries exist, so the sidebar panel
-    appears as soon as the integration is installed.
-    """
+    """Deploy frontend and register panel on integration discovery."""
     await _deploy_frontend(hass)
     await _register_panel(hass)
     return True
@@ -96,25 +89,18 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Medication Tracker from a config entry."""
-    await _deploy_frontend(hass)
-    await _register_panel(hass)
-
     if DOMAIN not in hass.data:
         store = MedicationStore(hass)
         await store.async_load()
         hass.data[DOMAIN] = store
 
     store = hass.data[DOMAIN]
-
     data = dict(entry.data)
     med_id = data["medication_id"]
 
     await store.async_add_medication(med_id, data)
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
     _register_services(hass)
-
     return True
 
 
@@ -136,7 +122,6 @@ def _register_services(hass: HomeAssistant) -> None:
     """Register medication services."""
 
     async def _mark_taken(call: ServiceCall) -> None:
-        """Mark a dose as taken by medication ID."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
         store = hass.data[DOMAIN]
         medication = store.get_medication(med_id)
@@ -151,7 +136,6 @@ def _register_services(hass: HomeAssistant) -> None:
             await store.async_adjust_stock(med_id, -stock_per_dose)
 
     async def _undo_taken(call: ServiceCall) -> None:
-        """Undo the last taken dose by medication ID."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
         store = hass.data[DOMAIN]
         medication = store.get_medication(med_id)
@@ -165,18 +149,14 @@ def _register_services(hass: HomeAssistant) -> None:
             await store.async_adjust_stock(med_id, stock_per_dose)
 
     async def _add_stock(call: ServiceCall) -> None:
-        """Add stock to a medication."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
         amount = call.data.get("amount", 1)
-        store = hass.data[DOMAIN]
-        await store.async_adjust_stock(med_id, amount)
+        await hass.data[DOMAIN].async_adjust_stock(med_id, amount)
 
     async def _set_stock(call: ServiceCall) -> None:
-        """Set absolute stock level."""
         med_id = call.data.get(ATTR_MEDICATION_ID)
         amount = call.data.get("amount", 0)
-        store = hass.data[DOMAIN]
-        await store.async_set_stock(med_id, amount)
+        await hass.data[DOMAIN].async_set_stock(med_id, amount)
 
     if not hass.services.has_service(DOMAIN, SERVICE_MARK_TAKEN):
         hass.services.async_register(DOMAIN, SERVICE_MARK_TAKEN, _mark_taken)

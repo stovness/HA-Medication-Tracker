@@ -3,13 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import STORAGE_KEY, STORAGE_VERSION
+
+
+def _make_id() -> str:
+    """Generate a short unique ID."""
+    return uuid.uuid4().hex[:12]
+
+
+def _utc_now() -> datetime:
+    """Return current UTC datetime with timezone."""
+    return datetime.now(timezone.utc)
 
 
 class MedicationStore:
@@ -62,18 +73,18 @@ class MedicationStore:
 
     # ---------- Supply tracking ----------
 
-    def get_stock(self, med_id: str) -> int:
+    def get_stock(self, med_id: str) -> float:
         """Get current stock level for a medication."""
         return self._data.get("medications", {}).get(med_id, {}).get("current_stock", 0)
 
-    async def async_set_stock(self, med_id: str, amount: int) -> None:
+    async def async_set_stock(self, med_id: str, amount: float) -> None:
         """Set absolute stock level."""
         async with self._lock:
             if med_id in self._data.get("medications", {}):
                 self._data["medications"][med_id]["current_stock"] = max(0, amount)
                 await self._async_save()
 
-    async def async_adjust_stock(self, med_id: str, delta: int) -> int:
+    async def async_adjust_stock(self, med_id: str, delta: float) -> float:
         """Adjust stock by delta (negative to consume, positive to add).
 
         Returns new stock level.
@@ -92,14 +103,14 @@ class MedicationStore:
 
     def get_history(self, med_id: str) -> list[dict[str, Any]]:
         """Get dose history for a medication (newest first)."""
-        return list(self._data.get("history", {}).get(med_id, []))
+        return self._data.get("history", {}).get(med_id, [])
 
     async def async_record_dose(self, med_id: str) -> str:
         """Record a dose as taken. Returns the history entry ID."""
         async with self._lock:
             entry = {
                 "id": _make_id(),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": _utc_now().isoformat(),
                 "action": "taken",
             }
             self._data.setdefault("history", {}).setdefault(med_id, []).insert(0, entry)
@@ -117,17 +128,6 @@ class MedicationStore:
                     return removed
             return None
 
-    async def async_undo_dose_by_id(self, med_id: str, dose_id: str) -> dict[str, Any] | None:
-        """Remove a specific dose entry by ID."""
-        async with self._lock:
-            history = self._data.get("history", {}).get(med_id, [])
-            for i, entry in enumerate(history):
-                if entry.get("id") == dose_id:
-                    removed = history.pop(i)
-                    await self._async_save()
-                    return removed
-            return None
-
     def get_last_taken(self, med_id: str) -> datetime | None:
         """Return the last taken datetime or None."""
         history = self._data.get("history", {}).get(med_id, [])
@@ -137,8 +137,8 @@ class MedicationStore:
         return None
 
     def get_taken_today(self, med_id: str) -> int:
-        """Count doses taken today."""
-        today = datetime.now().date()
+        """Count doses taken today (UTC)."""
+        today = _utc_now().date()
         count = 0
         for entry in self._data.get("history", {}).get(med_id, []):
             if entry.get("action") == "taken":
@@ -146,10 +146,3 @@ class MedicationStore:
                 if ts.date() == today:
                     count += 1
         return count
-
-
-def _make_id() -> str:
-    """Generate a short unique ID."""
-    import uuid
-
-    return uuid.uuid4().hex[:12]

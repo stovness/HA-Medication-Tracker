@@ -13,7 +13,6 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
-    TimeSelector,
     TextSelector,
     TextSelectorConfig,
     NumberSelector,
@@ -281,6 +280,10 @@ class MedicationTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Finalize and create the config entry."""
         med_id = uuid.uuid4().hex[:12]
 
+        title = self._name
+        if self._dosage and self._dosage_unit:
+            title = f"{self._name} ({self._dosage} {self._dosage_unit})"
+
         data = {
             "medication_id": med_id,
             CONF_NAME: self._name,
@@ -298,10 +301,6 @@ class MedicationTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "current_stock": self._initial_stock,
         }
 
-        title = self._name if self._dosage else self._name
-        if self._dosage and self._dosage_unit:
-            title = f"{self._name} ({self._dosage} {self._dosage_unit})"
-
         return self.async_create_entry(title=title, data=data)
 
 
@@ -309,7 +308,7 @@ class MedicationTrackerOptionsFlow(config_entries.OptionsFlow):
     """Options flow to edit an existing medication."""
 
     def __init__(self, config_entry):
-        self._entry = config_entry
+        pass
 
     async def async_step_init(self, user_input=None):
         """Manage medication options."""

@@ -12,11 +12,6 @@ def parse_time_str(time_str: str) -> time:
     return time(int(parts[0]), int(parts[1]))
 
 
-def format_time_str(t: time) -> str:
-    """Format a time object back to 'HH:MM'."""
-    return t.strftime("%H:%M")
-
-
 def get_next_dose_time(schedule: dict[str, Any], from_time: datetime | None = None) -> datetime | None:
     """Calculate the next dose time from a schedule.
 

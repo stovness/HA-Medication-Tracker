@@ -29,6 +29,7 @@
   .btn-primary { background: #03a9f4; color: white; }
   .btn-take { background: #43a047; color: white; }
   .btn-undo { background: #ff9800; color: white; }
+  .btn-refresh { background: var(--secondary-background-color, #e0e0e0); color: var(--primary-text-color); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .med-card {
@@ -69,9 +70,8 @@
   .empty h3 { font-size: 1.2em; margin-bottom: 8px; }
   .empty p { margin-bottom: 20px; }
 
-  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading { display: none; }
 
   @media (prefers-color-scheme: dark) {
     .stock-item { background: rgba(255,255,255,0.05); }
@@ -85,13 +85,11 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
     Add Medication
   </a>
-  <button class="btn btn-primary" onclick="loadMedications()" style="background: var(--secondary-background-color, #e0e0e0); color: var(--primary-text-color);">
+  <button class="btn btn-refresh" onclick="loadMedications()">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
     Refresh
   </button>
 </div>
-
-<div id="debug-output" style="background:#fff3cd;border:1px solid #ffc107;padding:8px;margin-bottom:12px;border-radius:6px;font-size:0.8em;font-family:monospace;display:none;"></div>
 
 <div id="app">
   <div class="empty" id="empty-state">
@@ -104,32 +102,26 @@
   </div>
 </div>
 
-<div class="loading" id="loading-indicator">Loading medications...</div>
-
 <script>
 const APP = document.getElementById('app');
 const EMPTY = document.getElementById('empty-state');
 
-// Scan all localStorage for anything that looks like an HA access token
+/* ---------- Auth ---------- */
+
 function findToken() {
   for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(localStorage.key(i));
     if (!raw || raw.length < 30) continue;
     try {
       const data = JSON.parse(raw);
-      // Direct token
       if (typeof data === 'string' && data.length > 30) return data;
-      // Object with access_token
       if (data.access_token && typeof data.access_token === 'string') return data.access_token;
-      // hassTokens structure
       if (data.tokens) {
         for (const t of Object.values(data.tokens)) {
           if (t.access_token) return t.access_token;
         }
       }
     } catch(e) {
-      // May be a raw JWT
       if (raw.startsWith('eyJ') && raw.length > 50) return raw;
     }
   }
@@ -143,55 +135,32 @@ function getToken() {
 }
 
 async function haFetch(url, options = {}) {
-  // Always include auth token if available (from localStorage)
   const token = getToken();
   const headers = { ...(options.headers || {}) };
-  if (token) {
-    headers['Authorization'] = 'Bearer ' + token;
-  }
-  // Set JSON content type for requests with a body
-  if (options.body && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json';
-  }
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
 
   let resp = await fetch(url, { ...options, headers, credentials: 'same-origin' });
-
-  // If that failed and we didn't have a token, try without auth (cookies)
   if (!resp.ok && !token) {
     resp = await fetch(url, { ...options, credentials: 'same-origin' });
   }
   return resp;
 }
 
+/* ---------- Rendering ---------- */
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 async function loadMedications() {
   try {
     const resp = await haFetch('/api/states');
-    if (!resp.ok) {
-      const msg = resp.status === 401 ? 'Not authenticated' : 'HTTP ' + resp.status;
-      throw new Error(msg);
-    }
+    if (!resp.ok) throw new Error(resp.status === 401 ? 'Not authenticated' : 'HTTP ' + resp.status);
     const states = await resp.json();
 
-    // DEBUG: Show raw medication sensor data
-    const debugDiv = document.getElementById('debug-output');
-    if (debugDiv) {
-      debugDiv.style.display = 'block';
-      const stockSensors = states.filter(s => s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock'));
-      let debugHtml = '<b>DEBUG:</b> Found ' + stockSensors.length + ' stock sensors. ' +
-        stockSensors.map(s => s.entity_id + '=' + s.state + ' medId=' + (s.attributes.medication_id||'?')).join(', ') +
-        ' | Total states: ' + states.length;
-      
-      // Also show button states
-      const takeBtns = states.filter(s => s.entity_id.match(/button\..*_take$/));
-      if (takeBtns.length) {
-        debugHtml += '<br><b>Buttons:</b> ' + takeBtns.map(s => s.entity_id + '=' + s.state).join(', ');
-      } else {
-        debugHtml += '<br><b>Buttons:</b> NONE FOUND';
-      }
-      debugDiv.innerHTML = debugHtml;
-    }
-
-    // Find medication stock sensors
     const stockEntities = states.filter(s =>
       s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock')
     );
@@ -202,8 +171,6 @@ async function loadMedications() {
     }
 
     EMPTY.style.display = 'none';
-
-    // Remove old cards (keep empty state)
     APP.querySelectorAll('.med-card').forEach(el => el.remove());
 
     for (const stock of stockEntities) {
@@ -211,12 +178,10 @@ async function loadMedications() {
       const medId = stock.attributes.medication_id || baseId;
       const name = (stock.attributes.friendly_name || baseId).replace(' Stock', '');
       const unit = stock.attributes.unit_of_measurement || '';
+      const stockVal = parseFloat(stock.state) || 0;
       const isLow = stock.attributes.low_stock || false;
       const lastTaken = stock.attributes.last_taken;
-      const color = stock.attributes.color || '#009688';
-      const stockVal = parseFloat(stock.state) || 0;
 
-      // Find related entities
       const daysRemaining = states.find(s => s.entity_id === `sensor.${baseId}_days_remaining`);
       const nextDose = states.find(s => s.entity_id === `sensor.${baseId}_next_dose`);
       const schedule = (nextDose && nextDose.attributes.schedule) || '';
@@ -227,24 +192,20 @@ async function loadMedications() {
       const canTake = takeBtn && takeBtn.state !== 'unavailable';
       const canUndo = undoBtn && undoBtn.state !== 'unavailable';
 
-      // Stock class
       let stockClass = 'stock-ok';
       if (isLow) stockClass = 'stock-low';
       else if (daysRemaining && parseFloat(daysRemaining.state) < 14) stockClass = 'stock-warn';
 
       let lastTakenHtml = '';
       if (lastTaken) {
-        try {
-          const lt = new Date(lastTaken);
-          lastTakenHtml = `<div class="last-taken">Last taken: ${lt.toLocaleString()}</div>`;
-        } catch(e) {}
+        try { lastTakenHtml = `<div class="last-taken">Last taken: ${new Date(lastTaken).toLocaleString()}</div>`; } catch(e) {}
       }
 
       const card = document.createElement('div');
       card.className = 'med-card';
       card.innerHTML = `
         <div class="med-header">
-          <div class="med-icon" style="background: ${color};">💊</div>
+          <div class="med-icon" style="background: ${stock.attributes.color || '#009688'};">💊</div>
           <div class="med-info">
             <div class="med-name">${escapeHtml(name)}</div>
             ${schedule ? `<div class="med-schedule">${escapeHtml(schedule)}</div>` : ''}
@@ -281,21 +242,12 @@ async function loadMedications() {
   }
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+/* ---------- Actions ---------- */
 
-// Global handler for Mark Taken / Undo buttons (inline onclick)
 async function handleMedAction(action, medId, btn) {
   const service = action === 'take' ? 'mark_taken' : 'undo_taken';
-  const dbg = document.getElementById('debug-output');
-
-  if (dbg) { dbg.style.display = 'block'; dbg.innerHTML = '<b>SENDING:</b> ' + action + ' medId=' + medId; }
 
   btn.disabled = true;
-  const origHTML = btn.innerHTML;
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
@@ -304,61 +256,19 @@ async function handleMedAction(action, medId, btn) {
       body: JSON.stringify({ medication_id: medId })
     });
     if (!resp.ok) {
-      const errText = await resp.text();
       btn.textContent = 'Failed (' + resp.status + ')';
       btn.disabled = false;
-      if (dbg) { dbg.innerHTML = '<b>FAILED:</b> HTTP ' + resp.status + ' - ' + errText.substring(0,100); }
       return;
     }
-    if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
     setTimeout(loadMedications, 2000);
   } catch (err) {
     btn.disabled = false;
     btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
-    if (dbg) { dbg.innerHTML = '<b>ERROR:</b> ' + err.message; }
   }
 }
 
-// Handle take/undo clicks via delegation (legacy, kept for safety)
-APP.addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action]');
-  if (!btn) return;
+/* ---------- Init ---------- */
 
-  const action = btn.dataset.action;
-  const medId = btn.dataset.id;
-
-  // Debug: show what we're sending
-  const dbg = document.getElementById('debug-output');
-  if (dbg) { dbg.style.display = 'block'; dbg.innerHTML = '<b>SENDING:</b> ' + action + ' medId=' + medId; }
-  const service = action === 'take' ? 'mark_taken' : 'undo_taken';
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
-
-  try {
-    const resp = await haFetch(`/api/services/ha_medication_tracker/${service}`, {
-      method: 'POST',
-      body: JSON.stringify({ medication_id: medId })
-    });
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error('Service call failed:', resp.status, errText);
-      btn.textContent = 'Failed (' + resp.status + ')';
-      btn.disabled = false;
-      if (dbg) { dbg.innerHTML = '<b>FAILED:</b> HTTP ' + resp.status + ' - ' + errText.substring(0,100); }
-      return;
-    }
-    if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
-    // Reload after short delay to let HA process
-    setTimeout(loadMedications, 2000);
-  } catch (err) {
-    console.error('Service call error:', err);
-    btn.disabled = false;
-    btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
-  }
-});
-
-// Load on page load and refresh every 10 seconds
 loadMedications();
 setInterval(loadMedications, 10000);
 </script>
