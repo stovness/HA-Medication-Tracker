@@ -177,9 +177,18 @@ async function loadMedications() {
     if (debugDiv) {
       debugDiv.style.display = 'block';
       const stockSensors = states.filter(s => s.entity_id.startsWith('sensor.') && s.entity_id.endsWith('_stock'));
-      debugDiv.innerHTML = '<b>DEBUG:</b> Found ' + stockSensors.length + ' stock sensors. ' +
-        stockSensors.map(s => s.entity_id + '=' + s.state).join(', ') +
+      let debugHtml = '<b>DEBUG:</b> Found ' + stockSensors.length + ' stock sensors. ' +
+        stockSensors.map(s => s.entity_id + '=' + s.state + ' medId=' + (s.attributes.medication_id||'?')).join(', ') +
         ' | Total states: ' + states.length;
+      
+      // Also show button states
+      const takeBtns = states.filter(s => s.entity_id.match(/button\..*_take$/));
+      if (takeBtns.length) {
+        debugHtml += '<br><b>Buttons:</b> ' + takeBtns.map(s => s.entity_id + '=' + s.state).join(', ');
+      } else {
+        debugHtml += '<br><b>Buttons:</b> NONE FOUND';
+      }
+      debugDiv.innerHTML = debugHtml;
     }
 
     // Find medication stock sensors
