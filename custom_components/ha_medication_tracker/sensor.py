@@ -60,6 +60,7 @@ async def async_setup_entry(
 class MedicationStockSensor(SensorEntity):
     """Sensor showing current stock level."""
 
+    _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, store, config_entry, med_id: str) -> None:
@@ -111,6 +112,7 @@ class MedicationStockSensor(SensorEntity):
 class MedicationDaysRemainingSensor(SensorEntity):
     """Sensor showing estimated days of supply remaining."""
 
+    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "days"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:calendar-clock"
@@ -152,6 +154,7 @@ class MedicationDaysRemainingSensor(SensorEntity):
 class MedicationNextDoseSensor(SensorEntity):
     """Sensor showing next dose time (from schedule, for info only)."""
 
+    _attr_has_entity_name = True
     _attr_icon = "mdi:alarm"
 
     def __init__(self, store, config_entry, med_id: str) -> None:
