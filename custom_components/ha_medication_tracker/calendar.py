@@ -12,7 +12,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .device import build_device_info
 
 
 def _ensure_tz(dt_value: datetime) -> datetime:
@@ -42,8 +41,6 @@ class MedicationCalendarEntity(CalendarEntity):
     No predicted/scheduled events - just real history.
     """
 
-    _attr_has_entity_name = True
-
     def __init__(self, store, config_entry, med_id: str) -> None:
         """Initialize the calendar."""
         super().__init__()
@@ -51,13 +48,8 @@ class MedicationCalendarEntity(CalendarEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_calendar"
-        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
+        self._attr_name = f"{config_entry.data.get('name', 'Medication')} Calendar"
         self._attr_event = None
-
-    @property
-    def name(self) -> str:
-        """Calendar name."""
-        return self._config_entry.data.get("name", "Medication")
 
     @property
     def icon(self) -> str:

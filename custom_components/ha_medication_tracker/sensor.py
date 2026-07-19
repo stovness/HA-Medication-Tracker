@@ -18,7 +18,6 @@ from .const import (
     ATTR_SCHEDULE,
     DOMAIN,
 )
-from .device import build_device_info
 from .schedule import get_next_dose_time, get_schedule_summary
 
 SCAN_INTERVAL = timedelta(seconds=5)
@@ -61,7 +60,6 @@ async def async_setup_entry(
 class MedicationStockSensor(SensorEntity):
     """Sensor showing current stock level."""
 
-    _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, store, config_entry, med_id: str) -> None:
@@ -69,14 +67,10 @@ class MedicationStockSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_stock"
-        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
+        self._attr_name = f"{config_entry.data['name']} Stock"
         unit = config_entry.data.get("dosage_unit", "tablet(s)")
         self._attr_native_unit_of_measurement = unit if unit in _STANDARD_UNITS else None
         self._attr_icon = "mdi:counter"
-
-    @property
-    def name(self) -> str:
-        return f"{self._config_entry.data['name']} Stock"
 
     @property
     def native_value(self) -> float:
@@ -117,7 +111,6 @@ class MedicationStockSensor(SensorEntity):
 class MedicationDaysRemainingSensor(SensorEntity):
     """Sensor showing estimated days of supply remaining."""
 
-    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "days"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:calendar-clock"
@@ -127,11 +120,7 @@ class MedicationDaysRemainingSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_days_remaining"
-        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
-
-    @property
-    def name(self) -> str:
-        return f"{self._config_entry.data['name']} Days Remaining"
+        self._attr_name = f"{config_entry.data['name']} Days Remaining"
 
     @property
     def native_value(self) -> float | None:
@@ -163,7 +152,6 @@ class MedicationDaysRemainingSensor(SensorEntity):
 class MedicationNextDoseSensor(SensorEntity):
     """Sensor showing next dose time (from schedule, for info only)."""
 
-    _attr_has_entity_name = True
     _attr_icon = "mdi:alarm"
 
     def __init__(self, store, config_entry, med_id: str) -> None:
@@ -171,11 +159,7 @@ class MedicationNextDoseSensor(SensorEntity):
         self._config_entry = config_entry
         self._med_id = med_id
         self._attr_unique_id = f"{med_id}_next_dose"
-        self._attr_device_info = build_device_info(config_entry, config_entry.data["name"], med_id)
-
-    @property
-    def name(self) -> str:
-        return f"{self._config_entry.data['name']} Next Dose"
+        self._attr_name = f"{config_entry.data['name']} Next Dose"
 
     @property
     def native_value(self) -> str | None:
