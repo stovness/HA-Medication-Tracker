@@ -28,7 +28,7 @@ from .const import (
 )
 from .schedule import get_next_dose_time, get_schedule_summary
 
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=5)
 
 
 async def async_setup_entry(

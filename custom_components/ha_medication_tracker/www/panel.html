@@ -311,7 +311,7 @@ async function handleMedAction(action, medId, btn) {
       return;
     }
     if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
-    setTimeout(loadMedications, 500);
+    setTimeout(loadMedications, 2000);
   } catch (err) {
     btn.disabled = false;
     btn.textContent = action === 'take' ? 'Mark Taken' : 'Undo';
@@ -350,7 +350,7 @@ APP.addEventListener('click', async (e) => {
     }
     if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
     // Reload after short delay to let HA process
-    setTimeout(loadMedications, 500);
+    setTimeout(loadMedications, 2000);
   } catch (err) {
     console.error('Service call error:', err);
     btn.disabled = false;
