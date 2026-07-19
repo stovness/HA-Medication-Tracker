@@ -285,6 +285,10 @@ APP.addEventListener('click', async (e) => {
 
   const action = btn.dataset.action;
   const medId = btn.dataset.id;
+
+  // Debug: show what we're sending
+  const dbg = document.getElementById('debug-output');
+  if (dbg) { dbg.style.display = 'block'; dbg.innerHTML = '<b>SENDING:</b> ' + action + ' medId=' + medId; }
   const service = action === 'take' ? 'mark_taken' : 'undo_taken';
 
   btn.disabled = true;
@@ -296,11 +300,14 @@ APP.addEventListener('click', async (e) => {
       body: JSON.stringify({ medication_id: medId })
     });
     if (!resp.ok) {
-      console.error('Service call failed:', resp.status, await resp.text());
+      const errText = await resp.text();
+      console.error('Service call failed:', resp.status, errText);
       btn.textContent = 'Failed (' + resp.status + ')';
       btn.disabled = false;
+      if (dbg) { dbg.innerHTML = '<b>FAILED:</b> HTTP ' + resp.status + ' - ' + errText.substring(0,100); }
       return;
     }
+    if (dbg) { dbg.innerHTML = '<b>OK:</b> ' + action + ' recorded for ' + medId; }
     // Reload after short delay to let HA process
     setTimeout(loadMedications, 500);
   } catch (err) {
