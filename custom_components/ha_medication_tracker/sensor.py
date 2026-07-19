@@ -77,6 +77,11 @@ class MedicationStockSensor(SensorEntity):
     def native_value(self) -> float:
         return self._store.get_stock(self._med_id)
 
+    async def async_added_to_hass(self) -> None:
+        """Force initial state write when entity is added."""
+        await super().async_added_to_hass()
+        self.async_write_ha_state()
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         last_taken = self._store.get_last_taken(self._med_id)
@@ -138,6 +143,10 @@ class MedicationDaysRemainingSensor(SensorEntity):
 
         return round((stock / stock_per_dose) / doses_per_day, 1)
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_write_ha_state()
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data = self._config_entry.data
@@ -169,6 +178,10 @@ class MedicationNextDoseSensor(SensorEntity):
         schedule = self._config_entry.data.get("schedule", {})
         next_dose = get_next_dose_time(schedule, dt_util.now())
         return next_dose.isoformat() if next_dose else None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_write_ha_state()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
