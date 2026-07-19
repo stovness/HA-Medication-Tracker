@@ -12,5 +12,4 @@ def build_device_info(config_entry, name: str, med_id: str) -> DeviceInfo:
         name=f"Medication: {name}",
         manufacturer="HA Medication Tracker",
         model=config_entry.data.get("dosage", "") or "Medication",
-        suggested_area="Medicine Cabinet",
     )
