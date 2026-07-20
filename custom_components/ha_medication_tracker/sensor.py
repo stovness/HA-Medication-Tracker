@@ -79,12 +79,8 @@ class MedicationStockSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Force initial state write when entity is added."""
-        import logging
-        _LOGGER = logging.getLogger(__name__)
-        _LOGGER.error("ASYNC_ADDED_TO_HASS: %s stock=%s", self.entity_id, self._store.get_stock(self._med_id))
         await super().async_added_to_hass()
         self.async_write_ha_state()
-        _LOGGER.error("STATE_WRITTEN: %s", self.entity_id)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
