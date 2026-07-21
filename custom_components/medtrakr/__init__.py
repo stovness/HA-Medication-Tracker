@@ -89,6 +89,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up MedTrakr from a config entry."""
+    # Deploy frontend and register sidebar panel
+    await _deploy_frontend(hass)
+    await _register_panel(hass)
+
     if DOMAIN not in hass.data:
         store = MedicationStore(hass)
         await store.async_load()

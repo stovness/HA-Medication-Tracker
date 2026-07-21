@@ -1,4 +1,4 @@
-# HA Medication Tracker
+# MedTrakr
 
 [![GitHub Release](https://img.shields.io/github/v/release/stovness/HA-Medication-Tracker?style=flat-square)](https://github.com/stovness/HA-Medication-Tracker/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=flat-square)](https://github.com/hacs/integration)
@@ -22,7 +22,7 @@ A complete Home Assistant custom integration for medication tracking. Schedule d
 
 Existing medication trackers are good but each misses something:
 
-| Feature | HA Medication Tracker | ha-medication-reminder | medication_tracker |
+| Feature | MedTrakr | ha-medication-reminder | medication_tracker |
 |---|---|---|---|
 | Calendar integration | Yes | No | No |
 | Per-day scheduling | Yes | Yes | No |
@@ -40,7 +40,7 @@ Existing medication trackers are good but each misses something:
 2. Click the three dots (top right) > **Custom repositories**
 3. Paste: `https://github.com/stovness/HA-Medication-Tracker`
 4. Category: **Integration**
-5. Click **Add**, then find "HA Medication Tracker" and install it
+5. Click **Add**, then find "MedTrakr" and install it
 6. Restart Home Assistant
 
 ### Manual
@@ -55,7 +55,7 @@ Then restart Home Assistant.
 
 ### Sidebar Panel
 
-After adding your first medication, a **Medication Tracker** entry appears in the sidebar (near History, HACS, etc.). This opens a full management dashboard where you can:
+After adding your first medication, a **MedTrakr** entry appears in the sidebar (near History, HACS, etc.). This opens a full management dashboard where you can:
 
 - View all medications with stock levels and schedules
 - Mark doses as taken or undo
@@ -78,7 +78,7 @@ Then use `type: custom:medication-tracker-card` in any dashboard.
 ### Adding a Medication
 
 1. Go to **Settings > Devices & Services**
-2. Click **Add Integration** and search for "HA Medication Tracker"
+2. Click **Add Integration** and search for "MedTrakr"
 3. Follow the setup wizard:
 
 **Step 1 - Medication Info:**

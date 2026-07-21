@@ -5,7 +5,7 @@
  * and quick-action buttons for tracking doses.
  *
  * Installation: Add as a module resource in HA:
- *   /local/community/ha-medication-tracker-card.js
+ *   /local/community/medtrakr/medication-tracker-card.js
  */
 
 class MedicationTrackerCard extends HTMLElement {

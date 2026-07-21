@@ -59,7 +59,7 @@ views:
               - type: button
                 tap_action:
                   action: navigate
-                  navigation_path: /ha-medication-tracker
+                  navigation_path: /medtrakr
                 name: Manage
                 icon: mdi:cog
                 show_state: false
