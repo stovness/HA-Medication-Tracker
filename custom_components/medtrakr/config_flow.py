@@ -1,4 +1,4 @@
-"""Config flow for HA Medication Tracker."""
+"""Config flow for MedTrakr."""
 
 from __future__ import annotations
 

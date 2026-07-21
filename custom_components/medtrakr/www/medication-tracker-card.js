@@ -1,5 +1,5 @@
 /**
- * HA Medication Tracker - Lovelace Card
+ * MedTrakr - Lovelace Card
  *
  * A custom card that displays medication schedule, stock status,
  * and quick-action buttons for tracking doses.
@@ -296,11 +296,11 @@ class MedicationTrackerCard extends HTMLElement {
         const baseId = btn.dataset.baseId;
 
         if (action === "take") {
-          this._hass.callService("ha_medication_tracker", "mark_taken", {
+          this._hass.callService("medtrakr", "mark_taken", {
             medication_id: baseId,
           });
         } else if (action === "undo") {
-          this._hass.callService("ha_medication_tracker", "undo_taken", {
+          this._hass.callService("medtrakr", "undo_taken", {
             medication_id: baseId,
           });
         }

@@ -88,7 +88,7 @@ views:
   #     - type: action
   #       tap_action:
   #         action: call-service
-  #         service: ha_medication_tracker.mark_taken
+  #         service: medtrakr.mark_taken
   #         service_data:
   #           medication_id: "YOUR_MEDICATION_ID_HERE"
   #       icon: mdi:check-circle
@@ -97,7 +97,7 @@ views:
   #     - type: action
   #       tap_action:
   #         action: call-service
-  #         service: ha_medication_tracker.undo_taken
+  #         service: medtrakr.undo_taken
   #         service_data:
   #           medication_id: "YOUR_MEDICATION_ID_HERE"
   #       icon: mdi:undo

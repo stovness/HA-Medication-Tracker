@@ -48,7 +48,7 @@ Existing medication trackers are good but each misses something:
 ```bash
 cd /path/to/your/config
 git clone https://github.com/stovness/HA-Medication-Tracker.git
-cp -r HA-Medication-Tracker/custom_components/ha_medication_tracker custom_components/
+cp -r HA-Medication-Tracker/custom_components/medtrakr custom_components/
 ```
 
 Then restart Home Assistant.
@@ -68,7 +68,7 @@ If you also want a dashboard card:
 
 1. Go to **Settings > Dashboards > three dots > Resources**
 2. Click **Add Resource**
-3. URL: `/local/community/ha_medication_tracker/medication-tracker-card.js`
+3. URL: `/local/community/medtrakr/medication-tracker-card.js`
 4. Resource type: **JavaScript Module**
 
 Then use `type: custom:medication-tracker-card` in any dashboard.
@@ -160,7 +160,7 @@ cards:
         show_state: false
         tap_action:
           action: call-service
-          service: ha_medication_tracker.mark_taken
+          service: medtrakr.mark_taken
           service_data:
             medication_id: "your_medication_id"
 
@@ -172,7 +172,7 @@ cards:
         show_state: false
         tap_action:
           action: call-service
-          service: ha_medication_tracker.undo_taken
+          service: medtrakr.undo_taken
           service_data:
             medication_id: "your_medication_id"
 ```
@@ -233,10 +233,10 @@ action:
 
 | Service | Description | Parameters |
 |---|---|---|
-| `ha_medication_tracker.mark_taken` | Record a dose as taken | `medication_id` (required) |
-| `ha_medication_tracker.undo_taken` | Undo the last taken dose | `medication_id` (required) |
-| `ha_medication_tracker.add_stock` | Add to current stock | `medication_id`, `amount` (default: 1) |
-| `ha_medication_tracker.set_stock` | Set absolute stock level | `medication_id`, `amount` |
+| `medtrakr.mark_taken` | Record a dose as taken | `medication_id` (required) |
+| `medtrakr.undo_taken` | Undo the last taken dose | `medication_id` (required) |
+| `medtrakr.add_stock` | Add to current stock | `medication_id`, `amount` (default: 1) |
+| `medtrakr.set_stock` | Set absolute stock level | `medication_id`, `amount` |
 
 All services decrement/increment stock automatically when supply tracking is enabled.
 

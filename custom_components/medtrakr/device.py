@@ -10,6 +10,6 @@ def build_device_info(config_entry, name: str, med_id: str) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, med_id)},
         name=f"Medication: {name}",
-        manufacturer="HA Medication Tracker",
+        manufacturer="MedTrakr",
         model=config_entry.data.get("dosage", "") or "Medication",
     )

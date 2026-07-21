@@ -1,6 +1,6 @@
-"""Constants for HA Medication Tracker."""
+"""Constants for MedTrakr."""
 
-DOMAIN = "ha_medication_tracker"
+DOMAIN = "medtrakr"
 PLATFORMS = ["calendar", "sensor", "button"]
 
 CONF_MEDICATIONS = "medications"
@@ -50,4 +50,4 @@ SERVICE_ADD_STOCK = "add_stock"
 SERVICE_SET_STOCK = "set_stock"
 
 STORAGE_VERSION = 1
-STORAGE_KEY = "ha_medication_tracker_data"
+STORAGE_KEY = "medtrakr_data"

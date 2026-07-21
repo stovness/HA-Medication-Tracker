@@ -1,4 +1,4 @@
-"""HA Medication Tracker - Main integration module."""
+"""MedTrakr - Main integration module."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ from .store import MedicationStore
 _LOGGER = logging.getLogger(__name__)
 
 WWW_SOURCE = Path(__file__).parent / "www"
-WWW_DEST_DIR = "community/ha_medication_tracker"
-PANEL_URL = "/ha-medication-tracker"
-PANEL_TITLE = "Medication Tracker"
+WWW_DEST_DIR = "community/medtrakr"
+PANEL_URL = "/medtrakr"
+PANEL_TITLE = "MedTrakr"
 PANEL_ICON = "mdi:pill"
 _FRONTEND_DEPLOYED = False
 _PANEL_REGISTERED = False
@@ -76,7 +76,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
         require_admin=False,
     )
 
-    _LOGGER.info("Registered Medication Tracker sidebar panel")
+    _LOGGER.info("Registered MedTrakr sidebar panel")
     _PANEL_REGISTERED = True
 
 
@@ -88,7 +88,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up HA Medication Tracker from a config entry."""
+    """Set up MedTrakr from a config entry."""
     if DOMAIN not in hass.data:
         store = MedicationStore(hass)
         await store.async_load()

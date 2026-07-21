@@ -81,7 +81,7 @@
 <body>
 <div class="header">
   <div class="title">Medication Tracker</div>
-  <a href="javascript:void(0)" onclick="window.open('/config/integrations/integration/ha_medication_tracker','_blank')" class="btn btn-primary">
+  <a href="javascript:void(0)" onclick="window.open('/config/integrations/integration/medtrakr','_blank')" class="btn btn-primary">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
     Add Medication
   </a>
@@ -96,7 +96,7 @@
     <div class="icon">💊</div>
     <h3>No Medications Yet</h3>
     <p>Add your first medication to start tracking doses, schedules, and stock levels.</p>
-    <a href="javascript:void(0)" onclick="window.open('/config/integrations/integration/ha_medication_tracker','_blank')" class="btn btn-primary">
+    <a href="javascript:void(0)" onclick="window.open('/config/integrations/integration/medtrakr','_blank')" class="btn btn-primary">
       Add Medication
     </a>
   </div>
@@ -109,22 +109,45 @@ const EMPTY = document.getElementById('empty-state');
 /* ---------- Auth ---------- */
 
 function findToken() {
+  // Method 1: hassConnection promise (most reliable in iframe panels)
+  try {
+    if (window.hassConnection && window.hassConnection.access_token) return window.hassConnection.access_token;
+    if (window.parent && window.parent.hassConnection) {
+      if (window.parent.hassConnection.access_token) return window.parent.hassConnection.access_token;
+    }
+  } catch(e) {}
+
+  // Method 2: __HASS_AUTH from parent (used in some HA panel setups)
+  try {
+    if (window.__HASS_AUTH && window.__HASS_AUTH.access_token) return window.__HASS_AUTH.access_token;
+    if (window.parent && window.parent.__HASS_AUTH && window.parent.__HASS_AUTH.access_token) return window.parent.__HASS_AUTH.access_token;
+  } catch(e) {}
+
+  // Method 3: Search localStorage for HA auth tokens
   for (let i = 0; i < localStorage.length; i++) {
-    const raw = localStorage.getItem(localStorage.key(i));
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('hass')) continue;
+    const raw = localStorage.getItem(key);
     if (!raw || raw.length < 30) continue;
     try {
       const data = JSON.parse(raw);
-      if (typeof data === 'string' && data.length > 30) return data;
-      if (data.access_token && typeof data.access_token === 'string') return data.access_token;
-      if (data.tokens) {
-        for (const t of Object.values(data.tokens)) {
-          if (t.access_token) return t.access_token;
+      if (data.access_token && typeof data.access_token === 'string' && data.access_token.length > 20) return data.access_token;
+      if (data.hassRefreshToken || data.refresh_token) {
+        for (const [k, v] of Object.entries(data)) {
+          if (v && typeof v === 'object' && v.access_token) return v.access_token;
         }
       }
     } catch(e) {
       if (raw.startsWith('eyJ') && raw.length > 50) return raw;
     }
   }
+
+  // Method 4: Try hassTokens
+  try {
+    const tokens = JSON.parse(localStorage.getItem('hassTokens'));
+    if (tokens && tokens.access_token) return tokens.access_token;
+  } catch(e) {}
+
   return null;
 }
 
@@ -260,7 +283,7 @@ async function handleMedAction(action, medId, btn) {
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    const resp = await haFetch(`/api/services/ha_medication_tracker/${service}`, {
+    const resp = await haFetch(`/api/services/medtrakr/${service}`, {
       method: 'POST',
       body: JSON.stringify({ medication_id: medId })
     });
@@ -282,7 +305,7 @@ async function handleStockAdd(medId, amount, btn) {
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    const resp = await haFetch('/api/services/ha_medication_tracker/add_stock', {
+    const resp = await haFetch('/api/services/medtrakr/add_stock', {
       method: 'POST',
       body: JSON.stringify({ medication_id: medId, amount: amount })
     });
